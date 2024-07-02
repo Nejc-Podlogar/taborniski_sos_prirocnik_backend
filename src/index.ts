@@ -3,13 +3,14 @@ import * as bodyParser from "body-parser"
 import { Request, Response } from "express"
 import { AppDataSource } from "./data-source"
 import { Routes } from "./Routes/routes"
-import { User } from "./entity/User"
+import * as cors from 'cors'
 
 AppDataSource.initialize().then(async () => {
 
     // create express app
     const app = express()
     app.use(bodyParser.json())
+    app.use(cors<Request>())
 
     require('dotenv').config()
 
