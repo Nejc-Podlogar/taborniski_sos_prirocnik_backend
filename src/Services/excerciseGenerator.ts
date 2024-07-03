@@ -10,10 +10,10 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
         case ExerciseType.LETTERS:
             break;
         case ExerciseType.WORDS:
-            prompt = `Zgeneriraj ${length} slovenskih besed ki so povezane s taborniki, oddajanje, taborništvom, naravo, oddajanjem... Vsaka beseda naj bo v novi vrstici.`;
+            prompt = `Zgeneriraj ${length} slovenskih besed ki so povezane s taborniki, oddajanje, taborništvom, naravo, oddajanjem... Vsaka beseda naj bo v novi vrstici. Besede naj bodo brez ločil.`;
             break;
         case ExerciseType.SENTENCES:
-            prompt = `Zgeneriraj ${length} naključnih slovenskih kratkih stavkov ki so povezani s taborniki, oddajanje, taborništvom, naravo, oddajanjem... Vsak stavek naj bo v novi vrstici tako da jih bo uporabnik lahko prevedel.`;
+            prompt = `Zgeneriraj ${length} naključnih slovenskih kratkih stavkov ki so povezani s taborniki, oddajanje, taborništvom, naravo, oddajanjem... Vsak stavek naj bo v novi vrstici tako da jih bo uporabnik lahko prevedel. Stavki naj bodo brez ločil.`;
             break;
     }
 
@@ -67,6 +67,10 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
                 if (textValues.length > length) {
                     textValues.length = length;
                 }
+
+                textValues.forEach((value, index) => {
+                    textValues[index] = value.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '');
+                });
 
                 const morseValues = textValues.map((value) => {
                     return convertTextToMorse(value);
