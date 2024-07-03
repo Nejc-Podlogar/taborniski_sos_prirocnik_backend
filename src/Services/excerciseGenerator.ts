@@ -1,9 +1,9 @@
 import OpenAI, {RateLimitError} from "openai";
 import {convertTextToMorse} from "./morseConverter";
-import {ExerciseType, MorseExercises} from "../entity/MorseExcercises";
+import {ExerciseType, MorseExercises, TranslateType} from "../entity/MorseExcercises";
 import {AppDataSource} from "../data-source";
 
-export async function generateRandomExercise(length: number, type: ExerciseType, translateType: string) {
+export async function generateRandomExercise(length: number, type: ExerciseType, translateType: TranslateType) {
 
     let prompt = '';
     switch (type) {
@@ -19,35 +19,18 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
 
     try {
 
-        const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
-            messages: [
-                {role: 'system', content: 'You are a bot, that helps generate exercises for Morse code translation. You will generate a list of words or sentences based on the given type. You can generate words or sentences that are related to Morse code, nature, camping, etc. You only return the requested data without anything else. All the generated data is in Slovenian language. The lines are never numbered or anything that would represent a list. Also do not include any punctuations.'},
-                {role: 'assistant', content: prompt},
-            ],
-        });
+        if (type === ExerciseType.LETTERS) {
 
-        let content = completion.choices[0]?.message?.content?.trim() ?? '';
-        console.log('OpenAI Output: \n', content);
-        if (content && content.includes('{') && content.includes('}')) {
-            content = extractJson(content);
-        }
-
-        // If the exercise is of type textToMorse or morseToText we need to generate the morse translations as well.
-        if (translateType === 'textToMorse' || translateType === 'morseToText') {
-
-            const textValues = content.split('\n');
-            const morseValues = textValues.map((value) => {
+            const textValues: string[] = generateRandomLetters(length);
+            const morseValues: string[] = textValues.map((value) => {
                 return convertTextToMorse(value);
             });
 
-            // Save the generated exercise to the database
             const morseExercise = Object.assign(new MorseExercises(), {
                 type: type,
                 translateType: translateType,
-                value: textValues,
-                translatedValue: morseValues,
+                value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
+                translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
                 length: length,
             })
 
@@ -58,6 +41,55 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
             }
 
             return morseExercise
+
+        }else {
+
+            const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    {role: 'system', content: 'You are a bot, that helps generate exercises for Morse code translation. You will generate a list of words or sentences based on the given type. You can generate words or sentences that are related to Morse code, nature, camping, etc. You only return the requested data without anything else. All the generated data is in Slovenian language. The lines are never numbered or anything that would represent a list. Also do not include any punctuations.'},
+                    {role: 'assistant', content: prompt},
+                ],
+            });
+
+            let content = completion.choices[0]?.message?.content?.trim() ?? '';
+            console.log('OpenAI Output: \n', content);
+            if (content && content.includes('{') && content.includes('}')) {
+                content = extractJson(content);
+            }
+
+            // If the exercise is of type textToMorse or morseToText we need to generate the morse translations as well.
+            if (translateType === TranslateType.TEXTTOMORSE || translateType === TranslateType.MORSETOTEXT) {
+
+                const textValues = content.split('\n');
+
+                if (textValues.length > length) {
+                    textValues.length = length;
+                }
+
+                const morseValues = textValues.map((value) => {
+                    return convertTextToMorse(value);
+                });
+
+                // Save the generated exercise to the database
+                const morseExercise = Object.assign(new MorseExercises(), {
+                    type: type,
+                    translateType: translateType,
+                    value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
+                    translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
+                    length: length,
+                })
+
+                try {
+                    await AppDataSource.getRepository(MorseExercises).save(morseExercise)
+                } catch (error) {
+                    console.error('Error saving the exercise to the database:', error);
+                }
+
+                return morseExercise
+
+            }
         }
 
 
@@ -79,6 +111,15 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
             console.error('Error:', error);
         }
     }
+}
+
+function generateRandomLetters(length: number): string[] {
+    const letters: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result: string[] = [];
+    for (let i = 0; i < length; i++) {
+        result.push(letters.charAt(Math.floor(Math.random() * letters.length)));
+    }
+    return result;
 }
 
 
