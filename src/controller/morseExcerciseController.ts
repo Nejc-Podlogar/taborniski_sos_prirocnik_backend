@@ -41,16 +41,17 @@ export class MorseExcerciseController {
     }
 
     async getSpecificExercise(request: Request, response: Response, next: NextFunction) {
-        const { type, translateType, numberOfElements } = request.body;
+        const { type, translateType, numberOfElements, learningInteractionType } = request.body;
 
         console.log('Requesting exercise from the insomnia:', {
             type,
             translateType,
-            numberOfElements
+            numberOfElements,
+            learningInteractionType
         });
 
         // Request data from chatGPT via the exercise generator service
-        const exercise = generateRandomExercise(numberOfElements, type, translateType);
+        const exercise = generateRandomExercise(numberOfElements, type, translateType, learningInteractionType);
 
         return exercise;
 

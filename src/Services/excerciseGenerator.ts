@@ -1,9 +1,9 @@
 import OpenAI, {RateLimitError} from "openai";
 import {convertTextToMorse} from "./morseConverter";
-import {ExerciseType, MorseExercises, TranslateType} from "../entity/MorseExcercises";
+import {ExerciseType, LearningInteractionType, MorseExercises, TranslateType} from "../entity/MorseExcercises";
 import {AppDataSource} from "../data-source";
 
-export async function generateRandomExercise(length: number, type: ExerciseType, translateType: TranslateType) {
+export async function generateRandomExercise(length: number, type: ExerciseType, translateType: TranslateType, learningInteractionType: LearningInteractionType) {
 
     let prompt = '';
     switch (type) {
@@ -26,21 +26,50 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
                 return convertTextToMorse(value);
             });
 
-            const morseExercise = Object.assign(new MorseExercises(), {
-                type: type,
-                translateType: translateType,
-                value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
-                translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
-                length: length,
-            })
+            if (learningInteractionType === LearningInteractionType.CARDS) {
 
-            try {
-                await AppDataSource.getRepository(MorseExercises).save(morseExercise)
-            } catch (error) {
-                console.error('Error saving the exercise to the database:', error);
+                const shuffledMorseValues = morseValues.slice().sort(() => Math.random() - 0.5);
+
+                const areTranslationsCorrect: boolean[] = morseValues.map((value, index) => {
+                    return value === shuffledMorseValues[index];
+                });
+
+                const morseExercise = Object.assign(new MorseExercises(), {
+                    type: type,
+                    translateType: translateType,
+                    value: translateType == TranslateType.MORSETOTEXT ? shuffledMorseValues : textValues,
+                    translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : shuffledMorseValues,
+                    length: length,
+                    learningInteractionType: learningInteractionType,
+                    areTranslationsCorrect: areTranslationsCorrect
+                })
+
+                try {
+                    await AppDataSource.getRepository(MorseExercises).save(morseExercise)
+                } catch (error) {
+                    console.error('Error saving the exercise to the database:', error);
+                }
+
+                return morseExercise
+
+            } else {
+                const morseExercise = Object.assign(new MorseExercises(), {
+                    type: type,
+                    translateType: translateType,
+                    value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
+                    translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
+                    length: length,
+                    learningInteractionType: learningInteractionType,
+                })
+
+                try {
+                    await AppDataSource.getRepository(MorseExercises).save(morseExercise)
+                } catch (error) {
+                    console.error('Error saving the exercise to the database:', error);
+                }
+
+                return morseExercise
             }
-
-            return morseExercise
 
         }else {
 
@@ -76,23 +105,53 @@ export async function generateRandomExercise(length: number, type: ExerciseType,
                     return convertTextToMorse(value);
                 });
 
-                // Save the generated exercise to the database
-                const morseExercise = Object.assign(new MorseExercises(), {
-                    type: type,
-                    translateType: translateType,
-                    value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
-                    translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
-                    length: length,
-                })
 
-                try {
-                    await AppDataSource.getRepository(MorseExercises).save(morseExercise)
-                } catch (error) {
-                    console.error('Error saving the exercise to the database:', error);
+                // If learningInteractionType  is CARDS we need to updated the randomize the translations, so some of the translations are correct and others are not.
+                if (learningInteractionType === LearningInteractionType.CARDS) {
+                    const shuffledMorseValues = morseValues.slice().sort(() => Math.random() - 0.5);
+                    //const shuffledTextValues = textValues.slice().sort(() => Math.random() - 0.5);
+
+                    // I also must log which translations are correct and which are not and save them into another variable and save it to the database.
+                    const areTranslationsCorrect: boolean[] = morseValues.map((value, index) => {
+                        return value === shuffledMorseValues[index];
+                    });
+
+                    const morseExercise = Object.assign(new MorseExercises(), {
+                        type: type,
+                        translateType: translateType,
+                        value: translateType == TranslateType.MORSETOTEXT ? shuffledMorseValues : textValues,
+                        translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : shuffledMorseValues,
+                        length: length,
+                        learningInteractionType: learningInteractionType,
+                        areTranslationsCorrect: areTranslationsCorrect
+                    })
+
+                    try {
+                        await AppDataSource.getRepository(MorseExercises).save(morseExercise)
+                    } catch (error) {
+                        console.error('Error saving the exercise to the database:', error);
+                    }
+
+                    return morseExercise
+                } else {
+                    // Save the generated exercise to the database
+                    const morseExercise = Object.assign(new MorseExercises(), {
+                        type: type,
+                        translateType: translateType,
+                        value: translateType == TranslateType.MORSETOTEXT ? morseValues : textValues,
+                        translatedValue: translateType == TranslateType.MORSETOTEXT ? textValues : morseValues,
+                        length: length,
+                        learningInteractionType: learningInteractionType,
+                    })
+
+                    try {
+                        await AppDataSource.getRepository(MorseExercises).save(morseExercise)
+                    } catch (error) {
+                        console.error('Error saving the exercise to the database:', error);
+                    }
+
+                    return morseExercise
                 }
-
-                return morseExercise
-
             }
         }
 

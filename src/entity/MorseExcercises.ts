@@ -6,6 +6,12 @@ export enum ExerciseType {
     SENTENCES = "sentences",
 }
 
+export enum LearningInteractionType {
+    CARDS = "cards",
+    KEYBOARD = "keyboard",
+    TOKENS = "tokens",
+}
+
 export enum TranslateType {
     TEXTTOMORSE = "textToMorse",
     MORSETOTEXT = "morseToText",
@@ -34,6 +40,9 @@ export class MorseExercises {
     @Column()
     translatedValue: string;
 
+    @Column("boolean", {array: true, nullable: true })
+    areTranslationsCorrect?: boolean[];
+
     @Column('int')
     length: number;
 
@@ -42,4 +51,11 @@ export class MorseExercises {
 
     @UpdateDateColumn()
     updatedAt: Date;
+
+    @Column({
+        type: "enum",
+        enum: LearningInteractionType,
+    })
+    learningInteractionType: LearningInteractionType;
+
 }
