@@ -11,6 +11,9 @@ export class Post {
     @Column()
     content: string;
 
+    @Column({nullable: true})
+    link: string;
+
     @CreateDateColumn()
     createdAt: Date;
 

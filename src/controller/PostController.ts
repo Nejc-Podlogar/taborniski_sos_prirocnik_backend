@@ -24,20 +24,22 @@ export class PostController {
     }
 
     async save(request: Request, response: Response, next: NextFunction) {
-        const { title, content } = request.body;
+        const { title, content, link } = request.body;
 
         const post = Object.assign(new Post(), {
             title,
-            content
+            content,
+            link
         })
 
         return this.postRepository.save(post)
     }
 
     async latest(request: Request, response: Response, next: NextFunction) {
-        return this.postRepository.find({
-            order: { createdAt: "DESC" },
-            take: 1
-        });
-    }
+    const posts = await this.postRepository.find({
+        order: { createdAt: "DESC" },
+        take: 1
+    });
+    return posts[0]; // Return the first (and only) post in the array
+}
 }
