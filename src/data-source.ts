@@ -3,6 +3,7 @@ import { DataSource } from "typeorm"
 import { User } from "./entity/User"
 import { Post } from "./entity/Post"
 import {MorseExercises} from "./entity/MorseExcercises";
+import {Orientation} from "./entity/Orientation";
 
 export const AppDataSource = new DataSource({
     type: "postgres",
@@ -16,7 +17,8 @@ export const AppDataSource = new DataSource({
     migrationsRun: true,
     entities: [
         Post,
-        MorseExercises
+        MorseExercises,
+        Orientation,
     ],
     migrations: [__dirname + "/migration/*.ts"],
     subscribers: [],
